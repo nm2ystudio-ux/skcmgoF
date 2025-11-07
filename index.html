@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ms" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SKCMgo v4.3 — Virtual Unified Dashboard</title>
+<meta name="color-scheme" content="light dark">
+<style>
+:root{
+  --bg:#f6f7fb; --card:#ffffff; --ink:#0b1324; --muted:#6b7280; --line:#e6eaf3;
+  --accent:#2563eb; --accent-2:#7c3aed; --good:#16a34a; --warn:#f59e0b; --bad:#ef4444;
+  --chip:#f2f7ff; --pill:#eef2ff; --radius:14px; --gap:16px;
+}
+[data-theme="dark"]{
+  --bg:#0d1117; --card:#111827; --ink:#e6edf3; --muted:#9aa7b0; --line:#1f2937;
+  --chip:#131a24; --pill:#1f2533; --accent:#3b82f6; --accent-2:#8b5cf6;
+}
+*{box-sizing:border-box} html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Noto Sans",Arial}
+h1,h2,h3{margin:.2rem 0}
+a{color:inherit} button{border:0;background:transparent;color:inherit;cursor:pointer}
+.kbd{font:600 12px/1.2 ui-monospace,Consolas,monospace;background:var(--pill);padding:3px 6px;border-radius:7px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 6px 18px rgba(0,0,0,.04)}
+.card .hd{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.card .bd{padding:12px 14px}
+hr{border:0;border-top:1px solid var(--line);margin:var(--gap) 0}
+
+/* Appbar */
+.appbar{
+  position:sticky;top:0;z-index:20;
+  padding:16px var(--gap);
+  background:linear-gradient(160deg,#0f2747 0%,#1f3e6e 60%,#254b85 100%);
+  color:#fff;border-bottom:1px solid rgba(255,255,255,.12);
+  display:flex;align-items:center;gap:14px;justify-content:space-between;
+}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .logo{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:#fff1;border:2px solid #ffffff33}
+.brand h1{font-size:18px;margin:0}
+.actions{display:flex;align-items:center;gap:10px}
+.tag{font-size:12px;padding:5px 10px;border-radius:999px;background:#ffffff22}
+
+/* Shell */
+.shell{display:grid;grid-template-columns:240px 1fr;gap:18px;padding:18px}
+@media (max-width:1100px){.shell{grid-template-columns:1fr}}
+.sidebar{position:sticky;top:74px;height:calc(100dvh - 90px)}
+.nav{display:grid;gap:8px}
+.nav button{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card)}
+.nav button.active{outline:2px solid var(--accent)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap}
+.toolbar .chip{background:var(--pill);padding:6px 10px;border-radius:999px;font-size:12px;border:1px solid var(--line)}
+.main{display:grid;gap:18px}
+
+/* Dashboard grid */
+.grid{
+  display:grid;gap:16px;
+  grid-template-columns: 320px 1fr 360px;
+  grid-template-areas:
+    "upcoming upcoming upcoming"
+    "left center right"
+    "left bottom bottom";
+}
+@media (max-width:1100px){
+  .grid{grid-template-columns:1fr;grid-template-areas:"upcoming" "left" "center" "right" "bottom"}
+}
+
+/* Dashboard blocks */
+.upcoming{grid-area:upcoming}
+.row-scroll{display:flex;gap:14px;overflow:auto;padding-bottom:6px;scroll-snap-type:x proximity}
+.event{min-width:320px;scroll-snap-align:start;display:grid;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 6px 16px rgba(0,0,0,.05)}
+.event .meta{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}
+.badge{padding:4px 8px;border-radius:999px;background:var(--pill);font-size:12px}
+
+.left{grid-area:left;display:grid;gap:16px}
+.counter{display:grid;place-items:center;padding:22px 16px;text-align:center}
+.counter .big{font-size:44px;font-weight:800}
+
+.progress-list{display:grid;gap:10px}
+.progress{display:grid;gap:6px;border:1px dashed var(--line);padding:10px;border-radius:12px;background:var(--chip)}
+.progress .bar{height:8px;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:999px;transform-origin:left;transform:scaleX(var(--val,0));transition:transform .5s ease}
+.progress .top{display:flex;justify-content:space-between}
+
+.center{grid-area:center}
+.timeline{position:relative;padding-left:16px}
+.timeline::before{content:"";position:absolute;left:8px;top:0;bottom:0;width:2px;background:var(--line)}
+.slot{display:grid;grid-template-columns:86px 1fr;gap:12px;margin:12px 0;align-items:flex-start}
+.time{color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:8px;background:var(--pill);padding:10px 12px;border-radius:12px}
+
+.right{grid-area:right;display:grid;gap:16px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:700px){.grid4{grid-template-columns:repeat(2,1fr)}}
+.classpill{height:76px;border-radius:14px;display:grid;place-items:center;font-weight:600;background:var(--chip);border:1px solid var(--line)}
+
+.bottom{grid-area:bottom}
+.chart-box{padding:8px 16px 20px}
+canvas{width:100%;height:220px}
+
+/* Tables */
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left}
+.table th{font-size:12px;color:var(--muted)}
+
+/* Login overlay */
+.login-wrap{
+  position:fixed;inset:0;background:linear-gradient(160deg,#0f2747 0%,#1f3e6e 60%,#254b85 100%);
+  display:grid;place-items:center;color:#fff;z-index:50
+}
+.login-box{width:min(480px,92vw);background:#ffffff12;border:1px solid #ffffff33;border-radius:16px;padding:20px;backdrop-filter:blur(6px)}
+.login-box h2{margin:.5rem 0 1rem}
+.login-box input{width:100%;padding:10px;border-radius:10px;border:1px solid #ffffff44;background:#00000020;color:#fff;margin:6px 0}
+.login-box .btn{background:#ffffff22;padding:10px 14px;border-radius:10px;margin-top:8px}
+.login-note{font-size:12px;opacity:.9;margin-top:8px}
+
+/* Toast */
+.toast{position:fixed;right:14px;bottom:14px;background:var(--card);border:1px solid var(--line);padding:10px 12px;border-radius:10px;box-shadow:0 6px 14px rgba(0,0,0,.12);display:none}
+.toast.show{display:block}
+</style>
+</head>
+<body>
+<header class="appbar">
+  <div class="brand">
+    <div class="logo">🎓</div>
+    <div>
+      <h1>SKCMgo — Virtual Unified Dashboard</h1>
+      <div class="tag" id="todayChip">—</div>
+    </div>
+  </div>
+  <div class="actions">
+    <label class="tag" for="csvFile">📥 Import CSV</label>
+    <input id="csvFile" type="file" accept=".csv" style="display:none">
+    <button class="tag" id="reloadBtn" title="Cuba muat semula CSV setempat">🔄 Reload</button>
+    <button class="tag" id="themeBtn" title="Tukar tema">🌓</button>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="card">
+      <div class="hd"><strong>Navigasi</strong><span id="roleChip" class="tag">Tetamu</span></div>
+      <div class="bd">
+        <div class="nav" id="nav">
+          <button data-tab="dashboard" class="active">🏠 Dashboard</button>
+          <button data-tab="akademik">🧮 Akademik</button>
+          <button data-tab="hem">❤️ HEM</button>
+          <button data-tab="pentadbiran">📚 Pentadbiran</button>
+          <button data-tab="analitik">📈 Analitik</button>
+          <button data-tab="profil">⚙️ Profil</button>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <div class="hd"><strong>Data</strong></div>
+      <div class="bd">
+        <div class="toolbar">
+          <span class="chip">Sumber: <b id="srcChip">Auto (fail setempat)</b></span>
+          <span class="chip">Rekod murid: <b id="muridCount">0</b></span>
+          <span class="chip">Purata hadir: <b id="avgAttend">—</b></span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- DASHBOARD -->
+    <section id="tab-dashboard">
+      <div class="grid">
+        <div class="upcoming">
+          <div class="hd card"><strong>Upcoming</strong><span class="tag">Jadual & Log</span></div>
+          <div class="row-scroll" id="upcomingRow"></div>
+        </div>
+
+        <div class="left">
+          <div class="card counter">
+            <div class="sub">Days to holiday</div>
+            <div class="big" id="dayCounter">—</div>
+            <div class="sub" id="holidayName">Cuti Pertengahan Penggal</div>
+          </div>
+          <div class="card">
+            <div class="hd"><strong>Exams</strong><span class="sub">Kemajuan markah (≥80)</span></div>
+            <div class="bd">
+              <div class="progress-list" id="examList"></div>
+              <div style="margin-top:10px;display:flex;justify-content:flex-end">
+                <button class="kbd" id="seeAllBtn">See all</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="center">
+          <div class="card">
+            <div class="hd"><strong>Calendar</strong><span class="sub" id="calCount">0 events</span></div>
+            <div class="bd"><div class="timeline" id="timeline"></div></div>
+          </div>
+        </div>
+
+        <div class="right">
+          <div class="card">
+            <div class="hd"><strong>Your Classes</strong><span class="sub">Kelab/Sukan</span></div>
+            <div class="bd"><div class="grid4" id="classGrid"></div></div>
+          </div>
+          <div class="card">
+            <div class="hd"><strong>Statistics</strong><span class="sub">A &ge; 80 | Below C</span></div>
+            <div class="chart-box"><canvas id="chart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="bottom">
+          <div class="card">
+            <div class="hd"><strong>Nota</strong><span class="sub">Integrasi CSV sebenar</span></div>
+            <div class="bd">
+              • Fail CSV yang disokong: lajur <span class="kbd">ROW_KIND</span> ∈ murid/status/staff/jadual/log.  
+              • Subjek diambil dari lajur: <span class="kbd">BM, BI, MAT, SAINS, SEJ, AGAMA, RBT, PSV, MUZIK, PJPK</span>.  
+              • Kehadiran dari lajur <span class="kbd">KEHADIR</span> (%). RMT/KWAMP dari <span class="kbd">RMT & KWAMP</span>.  
+              • Jadual dari baris <span class="kbd">ROW_KIND=jadual</span>: <span class="kbd">JAD_GURU/JAD_KELAS/JAD_MASA/JAD_SUBJEK</span>.  
+              • Log dari baris <span class="kbd">ROW_KIND=log</span>: <span class="kbd">LOG_TARIKH/LOG_PROGRAM/LOG_UNIT/LOG_STATUS</span>.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AKADEMIK -->
+    <section id="tab-akademik" style="display:none">
+      <div class="card">
+        <div class="hd"><strong>Analisis Akademik</strong><span class="sub">Top A mengikut subjek</span></div>
+        <div class="bd">
+          <div id="akaSummary" class="toolbar" style="margin-bottom:10px"></div>
+          <div style="overflow:auto">
+            <table class="table" id="akaTable">
+              <thead></thead><tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HEM -->
+    <section id="tab-hem" style="display:none">
+      <div class="card">
+        <div class="hd"><strong>HEM — RMT/KWAMP & SSDM</strong><span class="sub">Ringkasan</span></div>
+        <div class="bd" id="hemSummary" class="toolbar"></div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="hd"><strong>Senarai Murid (HEM)</strong><span class="sub">Carian pantas</span></div>
+        <div class="bd">
+          <input id="hemSearch" placeholder="Cari nama/kelas…" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);margin-bottom:10px">
+          <div style="overflow:auto">
+            <table class="table" id="hemTable"><thead></thead><tbody></tbody></table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PENTADBIRAN -->
+    <section id="tab-pentadbiran" style="display:none">
+      <div class="card">
+        <div class="hd"><strong>Pentadbiran — Status Kehadiran Guru</strong><span class="sub">ROW_KIND=status</span></div>
+        <div class="bd" id="adminStatus"></div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="hd"><strong>Jadual Guru</strong><span class="sub">ROW_KIND=jadual</span></div>
+        <div class="bd">
+          <div style="overflow:auto">
+            <table class="table" id="jadGuruTable"><thead></thead><tbody></tbody></table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ANALITIK -->
+    <section id="tab-analitik" style="display:none">
+      <div class="card">
+        <div class="hd"><strong>Analitik — Graf Ringkas</strong><span class="sub">A vs Below C</span></div>
+        <div class="bd"><canvas id="chart2"></canvas></div>
+      </div>
+    </section>
+
+    <!-- PROFIL -->
+    <section id="tab-profil" style="display:none">
+      <div class="card">
+        <div class="hd"><strong>Profil & Sesi</strong><span class="sub">Log masuk</span></div>
+        <div class="bd" id="profileBox">
+          <div class="toolbar">
+            <span class="chip">Peranan: <b id="profRole">tetamu</b></span>
+            <span class="chip">Pengguna: <b id="profUser">—</b></span>
+            <button class="chip" id="logoutBtn">Log keluar</button>
+          </div>
+          <hr>
+          <div class="sub">Tip: Anda boleh tukar tema dan import CSV baharu bila-bila masa.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Login overlay -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-box">
+    <h2>Log Masuk SKCMgo</h2>
+    <label>Nama pengguna</label>
+    <input id="u" placeholder="admin / guru / tetamu" autocomplete="username">
+    <label>Kata laluan</label>
+    <input id="p" type="password" placeholder="skcmgo" autocomplete="current-password">
+    <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+      <button class="btn" id="doLogin">Masuk</button>
+      <button class="btn" id="quickAdmin">Admin</button>
+      <button class="btn" id="quickGuru">Guru</button>
+      <button class="btn" id="quickGuest">Tetamu</button>
+    </div>
+    <div class="login-note">Akaun demo: <span class="kbd">admin/skcmgo</span>, <span class="kbd">guru/skcmgo</span>, <span class="kbd">tetamu/skcmgo</span>.</div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Siap.</div>
+
+<script>
+/* ===== Helpers ===== */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const el = (t,a={},...kids)=>{const n=document.createElement(t);for(const[k,v]of Object.entries(a)){if(k==='class')n.className=v;else if(k==='style')n.style.cssText=v;else n.setAttribute(k,v)};kids.forEach(k=>n.append(k?.nodeType?k:document.createTextNode(k??'')));return n};
+const todayFmt = ()=> new Date().toLocaleDateString('ms-MY',{weekday:'long',day:'2-digit',month:'short',year:'numeric'});
+const showToast = (msg)=>{const t=$('#toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)};
+const excelSerialToDate = (num)=>{ if(!num||isNaN(num)) return ''; const origin=new Date(Date.UTC(1899,11,30)); const d=new Date(origin.getTime()+num*86400000); return d.toLocaleDateString('ms-MY') };
+const num = (v)=>{ if(v===null||v===undefined) return NaN; const s=String(v).replace(/[^0-9\.\-]/g,''); return parseFloat(s) };
+const pct = (v)=> isFinite(v) ? (Math.round(v*100)/100).toFixed(2)+'%' : '—';
+const mean = arr => arr.length? arr.reduce((a,b)=>a+b,0)/arr.length : 0;
+
+/* ===== Theme & Date ===== */
+$('#todayChip').textContent = todayFmt();
+$('#themeBtn').onclick = ()=>{const cur=document.documentElement.getAttribute('data-theme');const nxt=cur==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',nxt);localStorage.setItem('skcm_theme',nxt)};
+try{const saved=localStorage.getItem('skcm_theme'); if(saved) document.documentElement.setAttribute('data-theme',saved)}catch(e){}
+
+/* ===== Tabs ===== */
+const tabs = ['dashboard','akademik','hem','pentadbiran','analitik','profil'];
+$('#nav').addEventListener('click', e=>{
+  if(e.target.closest('button')){ const btn=e.target.closest('button'); const t=btn.dataset.tab;
+    $$('#nav button').forEach(b=>b.classList.toggle('active',b===btn));
+    tabs.forEach(x=> $('#tab-'+x).style.display = x===t?'block':'none');
+  }
+});
+
+/* ===== Login ===== */
+const ACCOUNTS = {
+  admin:{pass:'skcmgo', role:'admin', name:'Pentadbir'},
+  guru:{pass:'skcmgo', role:'guru', name:'Guru'},
+  tetamu:{pass:'skcmgo', role:'tetamu', name:'Tetamu'}
+};
+function doLogin(u,p){
+  const acc = ACCOUNTS[u?.trim()?.toLowerCase()];
+  if(acc && p===acc.pass){
+    localStorage.setItem('skcm_user', JSON.stringify({u,role:acc.role,name:acc.name}));
+    applySession(); showToast('Selamat datang, '+acc.name); $('#loginWrap').style.display='none';
+  }else{
+    alert('Nama pengguna/kata laluan tidak sah.');
+  }
+}
+function applySession(){
+  const s = JSON.parse(localStorage.getItem('skcm_user')||'{}');
+  const role = s.role || 'tetamu';
+  $('#roleChip').textContent = s.name? s.name : 'Tetamu';
+  $('#profRole').textContent = role;
+  $('#profUser').textContent = s.u || 'tetamu';
+  // Akses ringkas: tetamu sembunyi Pentadbiran & Analitik
+  const lock = role==='tetamu';
+  $$('[data-tab="pentadbiran"], [data-tab="analitik"]').forEach(b=> b.style.display = lock? 'none':'flex');
+}
+$('#doLogin').onclick=()=>doLogin($('#u').value,$('#p').value);
+$('#quickAdmin').onclick=()=>doLogin('admin','skcmgo');
+$('#quickGuru').onclick =()=>doLogin('guru','skcmgo');
+$('#quickGuest').onclick=()=>doLogin('tetamu','skcmgo');
+$('#logoutBtn').onclick=()=>{localStorage.removeItem('skcm_user'); location.reload()}
+try{ if(localStorage.getItem('skcm_user')) {applySession(); $('#loginWrap').style.display='none'} }catch(e){}
+
+/* ===== CSV Loader (auto + manual) ===== */
+// Parser CSV kecil (sokong petikan & koma)
+function parseCSV(text){
+  const rows=[]; let i=0, field='', row=[], inQ=false;
+  while(i<text.length){
+    const c=text[i];
+    if(c==='\"'){ if(inQ && text[i+1]==='\"'){ field+='\"'; i++; } else inQ=!inQ; }
+    else if(c===',' && !inQ){ row.push(field); field=''; }
+    else if((c==='\n' || c==='\r') && !inQ){
+      if(field!=='' || row.length){ row.push(field); rows.push(row); row=[]; field=''; }
+    } else { field+=c; }
+    i++;
+  }
+  if(field!==''||row.length){ row.push(field); rows.push(row); }
+  // buang baris kosong hujung
+  while(rows.length && rows[rows.length-1].every(x=>x==='')) rows.pop();
+  const hdr = rows.shift().map(h=>h.trim());
+  return rows.map(r=> Object.fromEntries(hdr.map((h,j)=>[h, r[j]??''])));
+}
+async function fetchLocalCSV(){
+  try{
+    const resp = await fetch('./skcmgo_template - Copy of Sheet1.csv',{cache:'no-store'});
+    if(!resp.ok) throw new Error('Fail tidak dijumpai');
+    const txt = await resp.text();
+    $('#srcChip').textContent='Auto (fail setempat)';
+    return parseCSV(txt);
+  }catch(e){ throw e }
+}
+$('#csvFile').addEventListener('change', async (ev)=>{
+  const f=ev.target.files[0]; if(!f) return;
+  const txt = await f.text();
+  DATA = parseCSV(txt);
+  $('#srcChip').textContent='Manual (import CSV)';
+  hydrateAll();
+});
+$('#reloadBtn').onclick = async()=>{
+  try{ DATA = await fetchLocalCSV(); hydrateAll(); showToast('CSV dimuat semula'); }
+  catch(e){ alert('Gagal auto-muat CSV setempat. Letak fail bersama HTML atau guna Import CSV.'); }
+};
+
+/* ===== State ===== */
+let DATA = []; // objek baris CSV
+let VIEW = { murid:[], status:[], staff:[], jadual:[], log:[] };
+
+/* ===== Render: Dashboard (cards) ===== */
+function renderUpcoming(){
+  const box = $('#upcomingRow'); box.innerHTML='';
+  // Gabung jadual + log untuk "Upcoming"
+  const combined=[];
+  VIEW.jadual.forEach(j=>{
+    combined.push({type:'jadual', title:(j.JAD_SUBJEK||'—'), time:(j.JAD_MASA||'—'),
+      blurb:(j.JAD_GURU? (j.JAD_GURU+' · '+(j.JAD_KELAS||'')) : ''), tags:['Jadual']});
+  });
+  VIEW.log.forEach(l=>{
+    combined.push({type:'log', title:(l.LOG_PROGRAM||'—'), time: excelSerialToDate(num(l.LOG_TARIKH)),
+      blurb:(l.LOG_UNIT||'')+' · '+(l.LOG_STATUS||''), tags:['Log']});
+  });
+  if(!combined.length){ combined.push({title:'Tiada acara',time:'—',blurb:'Tiada data jadual/log ditemui',tags:['Info']}); }
+  combined.slice(0,12).forEach(ev=>{
+    box.append(el('div',{class:'event'},
+      el('div',{class:'meta'},'🕒 ', ev.time||'—'),
+      el('div',{style:'font-weight:700;font-size:16px'}, ev.title||'—'),
+      el('div',{class:'sub'}, ev.blurb||''),
+      el('div',{class:'meta'}, ...(ev.tags||[]).map(t=> el('span',{class:'badge'},t)))
+    ));
+  });
+}
+function renderCounter(){
+  // Tetapkan tarikh cuti sasaran (boleh tukar ikut kalendar KPM)
+  const target = new Date('2025-11-20T00:00:00+08:00');
+  const now = new Date();
+  const days = Math.max(0, Math.ceil((target-now)/86400000));
+  $('#dayCounter').textContent = days;
+}
+function renderExams(){
+  // Akan guna peratus A≥80 merentas subjek untuk "progress"
+  const subs = ['BM','BI','MAT','SAINS','SEJ','AGAMA','RBT','PSV','MUZIK','PJPK'];
+  const rows = $('#examList'); rows.innerHTML='';
+  const total = VIEW.murid.length || 1;
+  subs.forEach(s=>{
+    const aCount = VIEW.murid.reduce((acc,m)=> acc + (num(m[s])>=80?1:0), 0);
+    const prog = aCount/total;
+    rows.append(el('div',{class:'progress', style:`--val:${prog}`},
+      el('div',{class:'top'}, el('div',{}, s), el('div',{class:'sub'}, Math.round(prog*100)+'%')),
+      el('div',{class:'bar'})
+    ));
+  });
+  $('#seeAllBtn').onclick=()=> { alert('Paparan ringkas A≥80 setiap subjek. Buka tab AKADEMIK untuk senarai penuh.'); };
+}
+function renderTimeline(){
+  const tline = $('#timeline'); tline.innerHTML='';
+  const items = VIEW.jadual.map(j=>({time:j.JAD_MASA||'—', title:j.JAD_SUBJEK||'—', room:j.JAD_KELAS||''}));
+  $('#calCount').textContent = items.length+' events';
+  if(!items.length){ tline.append(el('div',{},'Tiada jadual dijumpai.')); return; }
+  items.forEach(it=>{
+    tline.append(el('div',{class:'slot'},
+      el('div',{class:'time'}, it.time),
+      el('div',{class:'pill'}, '📘 ', el('b',{}, it.title),' · ', el('span',{class:'sub'}, it.room))
+    ));
+  });
+}
+function renderClasses(){
+  const grid = $('#classGrid'); grid.innerHTML='';
+  const picks = [];
+  // Pilih 8 "kelas" daripada KELAB + SUKAN + BERUNIFORM (unik, tidak kosong)
+  VIEW.murid.forEach(m=>{
+    [m.KELAB,m.SUKAN,m.BERUNIFORM].forEach(v=>{ if(v && !picks.includes(v) && picks.length<12) picks.push(v) });
+  });
+  const colors=['#e9efff','#fef3f2','#eefdf3','#f5f3ff','#f0fdf9','#fff7ed'];
+  (picks.length? picks:['Kelab Bestari','Bola Jaring','TKR']).forEach((c,i)=>{
+    grid.append(el('div',{class:'classpill',style:`background:${colors[i%colors.length]};border:1px solid var(--line)`}, c));
+  });
+}
+function drawChart(canvasId, seriesA, seriesB, labels){
+  const cv=$(canvasId); const ctx=cv.getContext('2d');
+  const W=cv.clientWidth,H=cv.clientHeight; cv.width=W*devicePixelRatio; cv.height=H*devicePixelRatio; ctx.scale(devicePixelRatio,devicePixelRatio);
+  ctx.clearRect(0,0,W,H);
+  ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--line');
+  ctx.beginPath(); ctx.moveTo(40,10); ctx.lineTo(40,H-30); ctx.lineTo(W-10,H-30); ctx.stroke();
+  const xStep=(W-70)/labels.length; ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--muted'); ctx.font="12px system-ui";
+  labels.forEach((m,i)=>{const x=40+xStep*i+xStep/2; ctx.fillText(m, x-10, H-12); ctx.strokeStyle="rgba(0,0,0,0.06)"; ctx.beginPath(); ctx.moveTo(x, 12); ctx.lineTo(x, H-30); ctx.stroke();});
+  const maxY=Math.max(...seriesA,...seriesB,1)+4;
+  const style=getComputedStyle(document.documentElement); const cA=style.getPropertyValue('--accent').trim(); const cB=style.getPropertyValue('--warn').trim();
+  function bar(x,y,w,h,fill){ ctx.fillStyle=fill; ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(x,y,w,h,6); else { ctx.rect(x,y,w,h); } ctx.fill(); }
+  labels.forEach((_,i)=>{ const baseX=40+xStep*i+xStep/2-10; const hA=(seriesA[i]/maxY)*(H-60); const hB=(seriesB[i]/maxY)*(H-60);
+    bar(baseX,(H-30)-hA,20,hA,cA); bar(baseX+24,(H-30)-hB,10,hB,cB); });
+}
+function renderChart1(){
+  // Bulan stat: guna 5 bucket ringkas dari data (fallback jika tiada tarikh)
+  const labels=['Jan','Feb','Mar','Apr','Mei'];
+  const subs = ['BM','BI','MAT','SAINS','SEJ','AGAMA','RBT','PSV','MUZIK','PJPK'];
+  const total = VIEW.murid.length || 1;
+  // ambil purata A≥80 dan BelowC<50 merentas subjek (secara kasar)
+  const A = subs.map(_=> VIEW.murid.reduce((acc,m)=> acc + (subs.reduce((x,s)=> x + (num(m[s])>=80?1:0),0)>=1?1:0, 0) / total );
+  const C = subs.map(_=> VIEW.murid.reduce((acc,m)=> acc + (subs.reduce((x,s)=> x + (num(m[s])<50?1:0),0)>=1?1:0, 0) / total );
+  drawChart('#chart', A.map(x=>Math.round(x*100)), C.map(x=>Math.round(x*100)), labels);
+}
+function renderChart2(){
+  const labels=['BM','BI','MAT','SAINS','SEJ','AGAMA','RBT','PSV','MUZIK','PJPK'];
+  const total = VIEW.murid.length || 1;
+  const A = labels.map(s=> VIEW.murid.reduce((acc,m)=> acc + (num(m[s])>=80?1:0), 0) / total * 100 );
+  const C = labels.map(s=> VIEW.murid.reduce((acc,m)=> acc + (num(m[s])<50?1:0), 0) / total * 100 );
+  drawChart('#chart2', A, C, labels);
+}
+
+/* ===== Render: AKADEMIK ===== */
+function renderAkademik(){
+  const subs=['BM','BI','MAT','SAINS','SEJ','AGAMA','RBT','PSV','MUZIK','PJPK'];
+  const sumBox = $('#akaSummary'); sumBox.innerHTML='';
+  const total = VIEW.murid.length || 1;
+  subs.forEach(s=>{
+    const aCount = VIEW.murid.reduce((acc,m)=> acc + (num(m[s])>=80?1:0), 0);
+    sumBox.append(el('span',{class:'chip'}, s+': ', Math.round(100*aCount/total)+'% A'));
+  });
+  // table
+  const thead=$('#akaTable thead'), tbody=$('#akaTable tbody'); thead.innerHTML=''; tbody.innerHTML='';
+  thead.append(el('tr',{}, el('th',{},'Nama'), el('th',{},'Kelas'), ...subs.map(s=> el('th',{},s))));
+  VIEW.murid.slice(0,300).forEach(m=>{
+    const tr=el('tr',{}, el('td',{},m.NAMA||''), el('td',{},m.KELAS||''),
+      ...subs.map(s=> el('td',{}, (m[s]||''))));
+    tbody.append(tr);
+  });
+}
+
+/* ===== Render: HEM ===== */
+function renderHEM(){
+  const sum = $('#hemSummary'); sum.innerHTML='';
+  const rmtLayak = VIEW.murid.reduce((acc,m)=> acc + (/Layak/i.test(m['RMT & KWAMP']||'')?1:0), 0);
+  const kwamp = VIEW.murid.reduce((acc,m)=> acc + (/KWAMP|KWAPM|BAP/i.test((m['RMT & KWAMP']||'') +' '+ (m.BAP||''))?1:0), 0);
+  const ssdmGood = VIEW.murid.reduce((a,m)=> a + (/Cemerlang|Terpuji/i.test(m.SSDM||'')?1:0),0);
+  const hadirAvg = mean(VIEW.murid.map(m=> num(m.KEHADIR)||0));
+  sum.append(el('span',{class:'chip'},'RMT/KWAMP layak: ', rmtLayak));
+  sum.append(el('span',{class:'chip'},'Bantuan (BAP/KWAMP dsb.): ', kwamp));
+  sum.append(el('span',{class:'chip'},'SSDM (baik): ', ssdmGood));
+  sum.append(el('span',{class:'chip'},'Avg Kehadiran: ', (Math.round(hadirAvg*100)/100).toFixed(2),'%'));
+  // table
+  const thead=$('#hemTable thead'), tbody=$('#hemTable tbody'); thead.innerHTML=''; tbody.innerHTML='';
+  thead.append(el('tr',{}, el('th',{},'Nama'), el('th',{},'Kelas'), el('th',{},'Kehadir %'), el('th',{},'RMT & KWAMP'), el('th',{},'BAP'), el('th',{},'SSDM')));
+  const filter = (q)=> (m)=> (m.NAMA||'').toLowerCase().includes(q) || (m.KELAS||'').toLowerCase().includes(q);
+  const renderBody = (list)=>{ tbody.innerHTML=''; list.forEach(m=> tbody.append(el('tr',{}, el('td',{},m.NAMA||''), el('td',{},m.KELAS||''), el('td',{},m.KEHADIR||''), el('td',{},m['RMT & KWAMP']||''), el('td',{},m.BAP||''), el('td',{},m.SSDM||'')))) };
+  renderBody(VIEW.murid);
+  $('#hemSearch').oninput = (e)=>{ const q=(e.target.value||'').toLowerCase().trim(); renderBody(q? VIEW.murid.filter(filter(q)) : VIEW.murid); };
+}
+
+/* ===== Render: Pentadbiran ===== */
+function renderPentadbiran(){
+  const box = $('#adminStatus'); box.innerHTML='';
+  if(!VIEW.status.length){ box.textContent='Tiada rekod status guru.'; }
+  VIEW.status.forEach(s=>{
+    box.append(el('div',{class:'toolbar',style:'margin-bottom:6px'},
+      el('span',{class:'chip'},'Guru: ', s.NAMA||s.NAMA_GURU||'—'),
+      el('span',{class:'chip'},'Status hari ini: ', s.STATUS_HARI_INI||'—'),
+      el('span',{class:'chip'},'Masuk: ', s.MASUK? (Math.round(num(s.MASUK)*24*60)/60).toFixed(2)+' jam' : '—'),
+      el('span',{class:'chip'},'Pulang: ', s.PULANG? (Math.round(num(s.PULANG)*24*60)/60).toFixed(2)+' jam' : '—')
+    ));
+  });
+  // Jadual guru
+  const thead=$('#jadGuruTable thead'), tbody=$('#jadGuruTable tbody'); thead.innerHTML=''; tbody.innerHTML='';
+  thead.append(el('tr',{}, el('th',{},'Guru'), el('th',{},'Kelas'), el('th',{},'Masa'), el('th',{},'Subjek')));
+  VIEW.jadual.forEach(j=>{
+    tbody.append(el('tr',{}, el('td',{},j.JAD_GURU||'—'), el('td',{},j.JAD_KELAS||'—'), el('td',{},j.JAD_MASA||'—'), el('td',{},j.JAD_SUBJEK||'—')));
+  });
+}
+
+/* ===== Hydrate from DATA ===== */
+function computeViews(){
+  VIEW = { murid:[], status:[], staff:[], jadual:[], log:[] };
+  DATA.forEach(r=>{
+    const k=(r.ROW_KIND||'').toLowerCase().trim();
+    if(k && VIEW[k]) VIEW[k].push(r);
+  });
+  // Papar ringkasan
+  $('#muridCount').textContent = VIEW.murid.length;
+  const avg = mean(VIEW.murid.map(m=> num(m.KEHADIR)||0));
+  $('#avgAttend').textContent = isFinite(avg)? (Math.round(avg*100)/100).toFixed(2)+'%':'—';
+}
+function hydrateAll(){
+  computeViews();
+  renderUpcoming(); renderCounter(); renderExams(); renderTimeline(); renderClasses(); renderChart1();
+  renderAkademik(); renderHEM(); renderPentadbiran(); renderChart2();
+}
+
+/* ===== Boot ===== */
+(async function boot(){
+  try{
+    DATA = await fetchLocalCSV(); // auto-muat jika fail ada di folder sama
+    hydrateAll();
+  }catch(e){
+    $('#srcChip').textContent='Menunggu Import CSV…';
+    // Masih render UI asas tanpa data
+    hydrateAll();
+  }
+})();
+</script>
+</body>
+</html>
