@@ -294,6 +294,7 @@ canvas{width:100%;height:220px}
 </div>
 
 <!-- Login overlay -->
+<!-- Login overlay (SAFE, inline handlers) -->
 <div class="login-wrap" id="loginWrap">
   <div class="login-box">
     <h2>Log Masuk SKCMgo</h2>
@@ -302,14 +303,15 @@ canvas{width:100%;height:220px}
     <label>Kata laluan</label>
     <input id="p" type="password" placeholder="skcmgo" autocomplete="current-password">
     <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
-      <button class="btn" id="doLogin">Masuk</button>
-      <button class="btn" id="quickAdmin">Admin</button>
-      <button class="btn" id="quickGuru">Guru</button>
-      <button class="btn" id="quickGuest">Tetamu</button>
+      <button class="btn" onclick="SKCMsafeLoginManual()">Masuk</button>
+      <button class="btn" onclick="SKCMsafeLoginQuick('admin')">Admin</button>
+      <button class="btn" onclick="SKCMsafeLoginQuick('guru')">Guru</button>
+      <button class="btn" onclick="SKCMsafeLoginQuick('tetamu')">Tetamu</button>
     </div>
     <div class="login-note">Akaun demo: <span class="kbd">admin/skcmgo</span>, <span class="kbd">guru/skcmgo</span>, <span class="kbd">tetamu/skcmgo</span>.</div>
   </div>
 </div>
+
 
 <div class="toast" id="toast">Siap.</div>
 
